@@ -65,10 +65,15 @@ def create_app(config_name='default'):
     @app.errorhandler(404)
     def not_found(error):
         return render_template('errors/404.html'), 404
-    
+
+    import traceback
+
     @app.errorhandler(500)
     def internal_error(error):
-        app.logger.error(f"500 error: {error}")  # log the real error to Render logs
+        app.logger.error("500 error: %s", error)
+        app.logger.error(traceback.format_exc())  # full traceback in Render logs
         return render_template('errors/500.html'), 500
+    
+
     
     return app
