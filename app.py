@@ -74,6 +74,5 @@ def create_app(config_name='default'):
         app.logger.error(traceback.format_exc())  # full traceback in Render logs
         return render_template('errors/500.html'), 500
     
-
     
     return app
