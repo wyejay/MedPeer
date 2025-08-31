@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.title }} - MedPeer{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Post Content -->
+            <div class="card mb-4">
+                <div class="card-body p-5">
+                    <!-- Post Header -->
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="flex-shrink-0">
+                            {% if post.author.profile_picture %}
+                                <img src="{{ post.author.profile_picture }}" alt="{{ post.author.get_full_name() }}" 
+                                     class="rounded-circle me-3" width="50" height="50">
+                            {% else %}
+                                <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                     style="width: 50px; height: 50px;">
+                                    <i class="fas fa-user text-white"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">
+                                <a href="{{ url_for('main.profile', username=post.author.username) }}" 
+                                   class="text-decoration-none fw-bold">
+                                    {{ post.author.get_full_name() }}
+                                </a>
+                                <small class="text-muted ms-2">@{{ post.author.username }}</small>
+                            </h6>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-primary me-2">{{ post.post_type.value.title() }}</span>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>{{ time_ago(post.created_at) }}
+                                    {% if post.created_at != post.updated_at %}
+                                        <span class="ms-2">(edited {{ time_ago(post.updated_at) }})</span>
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="dropdown">
+                                <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    {% if current_user.is_authenticated %}
+                                        {% if post.author == current_user %}
+                                            <li><a class="dropdown-item" href="{{ url_for('posts.edit_post', id=post.id) }}">
+                                                <i class="fas fa-edit me-2"></i>Edit Post
+                                            </a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                        {% endif %}
+                                        <li><a class="dropdown-item" href="#" onclick="sharePost()">
+                                            <i class="fas fa-share me-2"></i>Share
+                                        </a></li>
+                                        <li><a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#flagModal">
+                                            <i class="fas fa-flag me-2"></i>Report
+                                        </a></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Post Title and Content -->
+                    <h1 class="h2 fw-bold mb-4">{{ post.title }}</h1>
+                    <div class="post-content mb-4">
+                        {{ post.content | safe }}
+                    </div>
+
+                    <!-- Post Tags -->
+                    {% if post.tags %}
+                    <div class="mb-4">
+                        {% for tag in post.tags %}
+                            <a href="{{ url_for('posts.posts_by_tag', tag_name=tag.name) }}" 
+                               class="badge bg-secondary text-decoration-none me-1 mb-1">#{{ tag.name }}</a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Post Files -->
+                    {% if post.files.count() > 0 %}
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">
+                            <i class="fas fa-paperclip me-2"></i>Attachments
+                        </h6>
+                        <div class="row">
+                            {% for file in post.files %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center">
+                                                <div class="flex-shrink-0 me-3">
+                                                    {% if file.mime_type.startswith('image/') %}
+                                                        <i class="fas fa-image fa-2x text-primary"></i>
+                                                    {% elif file.mime_type == 'application/pdf' %}
+                                                        <i class="fas fa-file-pdf fa-2x text-danger"></i>
+                                                    {% elif file.mime_type.startswith('video/') %}
+                                                        <i class="fas fa-video fa-2x text-info"></i>
+                                                    {% else %}
+                                                        <i class="fas fa-file fa-2x text-secondary"></i>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-1">{{ file.original_filename }}</h6>
+                                                    <small class="text-muted">
+                                                        {{ (file.file_size / 1024 / 1024) | round(2) }} MB
+                                                        • {{ file.downloads }} downloads
+                                                    </small>
+                                                </div>
+                                                <div class="flex-shrink-0">
+                                                    <a href="{{ url_for('posts.download_file', file_id=file.id) }}" 
+                                                       class="btn btn-outline-primary btn-sm">
+                                                        <i class="fas fa-download"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Post Actions -->
+                    <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                        <div class="d-flex gap-4">
+                            {% if current_user.is_authenticated %}
+                                <button class="btn btn-link p-0 text-decoration-none" onclick="likePost({{ post.id }})">
+                                    <i class="fas fa-heart text-danger me-1"></i>
+                                    <span id="likes-count">{{ post.likes }}</span> likes
+                                </button>
+                            {% else %}
+                                <span class="text-muted">
+                                    <i class="fas fa-heart text-danger me-1"></i>{{ post.likes }} likes
+                                </span>
+                            {% endif %}
+                            <span class="text-muted">
+                                <i class="fas fa-comment text-primary me-1"></i>{{ comments|length }} comments
+                            </span>
+                            <span class="text-muted">
+                                <i class="fas fa-eye text-info me-1"></i>{{ post.views }} views
+                            </span>
+                        </div>
+                        {% if current_user.is_authenticated and post.author != current_user %}
+                            <a href="{{ url_for('messages.compose', user_id=post.author.id) }}" 
+                               class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-envelope me-1"></i>Message Author
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-comments me-2"></i>Comments ({{ comments|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Add Comment Form -->
+                    {% if current_user.is_authenticated %}
+                    <form method="POST" action="{{ url_for('posts.add_comment', id=post.id) }}" class="mb-4">
+                        {{ comment_form.hidden_tag() }}
+                        <div class="d-flex">
+                            <div class="flex-shrink-0 me-3">
+                                {% if current_user.profile_picture %}
+                                    <img src="{{ current_user.profile_picture }}" alt="{{ current_user.get_full_name() }}" 
+                                         class="rounded-circle" width="40" height="40">
+                                {% else %}
+                                    <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" 
+                                         style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user text-white"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                {{ comment_form.content(class="form-control mb-2", rows="3", placeholder="Add a comment...") }}
+                                {{ comment_form.submit(class="btn btn-primary") }}
+                            </div>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <a href="{{ url_for('auth.login') }}">Login</a> to add a comment.
+                    </div>
+                    {% endif %}
+
+                    <!-- Comments List -->
+                    {% if comments %}
+                        {% for comment in comments %}
+                        <div class="d-flex mb-4 {% if not loop.last %}border-bottom pb-4{% endif %}">
+                            <div class="flex-shrink-0 me-3">
+                                {% if comment.author.profile_picture %}
+                                    <img src="{{ comment.author.profile_picture }}" alt="{{ comment.author.get_full_name() }}" 
+                                         class="rounded-circle" width="40" height="40">
+                                {% else %}
+                                    <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" 
+                                         style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user text-white"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            <a href="{{ url_for('main.profile', username=comment.author.username) }}" 
+                                               class="text-decoration-none">{{ comment.author.get_full_name() }}</a>
+                                            <small class="text-muted ms-2">@{{ comment.author.username }}</small>
+                                        </h6>
+                                        <small class="text-muted">{{ time_ago(comment.created_at) }}</small>
+                                    </div>
+                                    {% if current_user.is_authenticated and (comment.author == current_user or current_user.is_admin) %}
+                                        <div class="dropdown">
+                                            <button class="btn btn-link btn-sm p-0" type="button" data-bs-toggle="dropdown">
+                                                <i class="fas fa-ellipsis-h"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li>
+                                                    <form method="POST" action="{{ url_for('posts.delete_comment', comment_id=comment.id) }}" 
+                                                          onsubmit="return confirm('Delete this comment?')">
+                                                        <button type="submit" class="dropdown-item text-danger">
+                                                            <i class="fas fa-trash me-2"></i>Delete
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <p class="mb-0">{{ comment.content | safe }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                            <h6 class="text-muted">No comments yet</h6>
+                            <p class="text-muted">Be the first to share your thoughts!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Author Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">About the Author</h6>
+                </div>
+                <div class="card-body text-center">
+                    {% if post.author.profile_picture %}
+                        <img src="{{ post.author.profile_picture }}" alt="{{ post.author.get_full_name() }}" 
+                             class="rounded-circle mb-3" width="80" height="80">
+                    {% else %}
+                        <div class="bg-secondary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                             style="width: 80px; height: 80px;">
+                            <i class="fas fa-user fa-2x text-white"></i>
+                        </div>
+                    {% endif %}
+                    <h6 class="fw-bold">{{ post.author.get_full_name() }}</h6>
+                    <p class="text-muted small">{{ post.author.role.value.title() }}</p>
+                    {% if post.author.bio %}
+                        <p class="small">{{ post.author.bio[:100] }}{% if post.author.bio|length > 100 %}...{% endif %}</p>
+                    {% endif %}
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('main.profile', username=post.author.username) }}" class="btn btn-outline-primary btn-sm">
+                            View Profile
+                        </a>
+                        {% if current_user.is_authenticated and current_user != post.author %}
+                            <a href="{{ url_for('messages.compose', user_id=post.author.id) }}" class="btn btn-outline-info btn-sm">
+                                Send Message
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Related Posts -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">More from {{ post.author.first_name }}</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% for related_post in post.author.posts.filter(Post.id != post.id).limit(3) %}
+                        <div class="p-3 {% if not loop.last %}border-bottom{% endif %}">
+                            <h6 class="mb-1">
+                                <a href="{{ url_for('posts.view_post', id=related_post.id) }}" 
+                                   class="text-decoration-none">{{ related_post.title }}</a>
+                            </h6>
+                            <small class="text-muted">{{ time_ago(related_post.created_at) }}</small>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Flag Modal -->
+{% if current_user.is_authenticated %}
+<div class="modal fade" id="flagModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Report Content</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('posts.flag_post', id=post.id) }}">
+                {{ flag_form.hidden_tag() }}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        {{ flag_form.reason.label(class="form-label") }}
+                        {{ flag_form.reason(class="form-select") }}
+                    </div>
+                    <div class="mb-3">
+                        {{ flag_form.description.label(class="form-label") }}
+                        {{ flag_form.description(class="form-control", rows="3", placeholder="Please provide additional details...") }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    {{ flag_form.submit(class="btn btn-danger") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function likePost(postId) {
+    fetch(`/posts/${postId}/like`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('likes-count').textContent = data.likes;
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function sharePost() {
+    if (navigator.share) {
+        navigator.share({
+            title: '{{ post.title }}',
+            text: 'Check out this post on MedPeer',
+            url: window.location.href
+        });
+    } else {
+        // Fallback: copy to clipboard
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            alert('Link copied to clipboard!');
+        });
+    }
+}
+</script>
+{% endblock %}

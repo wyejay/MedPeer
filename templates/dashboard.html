@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - MedPeer{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Welcome Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bold">Welcome back, {{ current_user.first_name }}!</h2>
+                    <p class="text-muted mb-0">{{ current_user.role.value.title() }} at {{ current_user.institution or 'MedPeer' }}</p>
+                </div>
+                <a href="{{ url_for('posts.create_post') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Create Post
+                </a>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-users fa-2x mb-2"></i>
+                            <h5>{{ current_user.followers.count() }}</h5>
+                            <small>Followers</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-file-alt fa-2x mb-2"></i>
+                            <h5>{{ current_user.posts.count() }}</h5>
+                            <small>Posts</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-comments fa-2x mb-2"></i>
+                            <h5>{{ current_user.comments.count() }}</h5>
+                            <small>Comments</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-download fa-2x mb-2"></i>
+                            <h5>{{ current_user.files.count() }}</h5>
+                            <small>Files</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feed -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-rss me-2"></i>Your Feed
+                    </h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <input type="radio" class="btn-check" name="feedFilter" id="all" autocomplete="off" checked>
+                        <label class="btn btn-outline-primary" for="all">All</label>
+                        
+                        <input type="radio" class="btn-check" name="feedFilter" id="following" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="following">Following</label>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if posts.items %}
+                        {% for post in posts.items %}
+                        <div class="border-bottom">
+                            <div class="p-4">
+                                <!-- Post Header -->
+                                <div class="d-flex align-items-start mb-3">
+                                    <div class="flex-shrink-0">
+                                        {% if post.author.profile_picture %}
+                                            <img src="{{ post.author.profile_picture }}" alt="{{ post.author.get_full_name() }}" 
+                                                 class="rounded-circle me-3" width="40" height="40">
+                                        {% else %}
+                                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                                 style="width: 40px; height: 40px;">
+                                                <i class="fas fa-user text-white"></i>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">
+                                            <a href="{{ url_for('main.profile', username=post.author.username) }}" 
+                                               class="text-decoration-none fw-bold">
+                                                {{ post.author.get_full_name() }}
+                                            </a>
+                                            <small class="text-muted">@{{ post.author.username }}</small>
+                                        </h6>
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>{{ time_ago(post.created_at) }}
+                                            <span class="badge bg-primary ms-2">{{ post.post_type.value.title() }}</span>
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <!-- Post Content -->
+                                <h5 class="mb-2">
+                                    <a href="{{ url_for('posts.view_post', id=post.id) }}" class="text-decoration-none text-dark">
+                                        {{ post.title }}
+                                    </a>
+                                </h5>
+                                <div class="mb-3">
+                                    {{ post.content[:200] | safe }}
+                                    {% if post.content|length > 200 %}
+                                        <a href="{{ url_for('posts.view_post', id=post.id) }}" class="text-primary">...read more</a>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Post Files -->
+                                {% if post.files.count() > 0 %}
+                                <div class="mb-3">
+                                    {% for file in post.files %}
+                                        <span class="badge bg-light text-dark me-2">
+                                            <i class="fas fa-paperclip me-1"></i>{{ file.original_filename }}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+
+                                <!-- Post Tags -->
+                                {% if post.tags %}
+                                <div class="mb-3">
+                                    {% for tag in post.tags %}
+                                        <a href="{{ url_for('posts.posts_by_tag', tag_name=tag.name) }}" 
+                                           class="badge bg-secondary text-decoration-none me-1">#{{ tag.name }}</a>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+
+                                <!-- Post Actions -->
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="d-flex gap-3">
+                                        <button class="btn btn-link btn-sm p-0 text-muted" onclick="likePost({{ post.id }})">
+                                            <i class="fas fa-heart me-1"></i><span id="likes-{{ post.id }}">{{ post.likes }}</span>
+                                        </button>
+                                        <a href="{{ url_for('posts.view_post', id=post.id) }}" class="btn btn-link btn-sm p-0 text-muted">
+                                            <i class="fas fa-comment me-1"></i>{{ post.comments.filter_by(is_deleted=False).count() }}
+                                        </a>
+                                        <span class="btn btn-link btn-sm p-0 text-muted">
+                                            <i class="fas fa-eye me-1"></i>{{ post.views }}
+                                        </span>
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn btn-link btn-sm p-0 text-muted" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-h"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            {% if post.author == current_user %}
+                                                <li><a class="dropdown-item" href="{{ url_for('posts.edit_post', id=post.id) }}">
+                                                    <i class="fas fa-edit me-2"></i>Edit
+                                                </a></li>
+                                            {% endif %}
+                                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#shareModal{{ post.id }}">
+                                                <i class="fas fa-share me-2"></i>Share
+                                            </a></li>
+                                            <li><a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#flagModal{{ post.id }}">
+                                                <i class="fas fa-flag me-2"></i>Report
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-5 text-center">
+                            <i class="fas fa-rss fa-3x text-muted mb-3"></i>
+                            <h5>No posts yet</h5>
+                            <p class="text-muted">Start following people or create your first post to see content here.</p>
+                            <a href="{{ url_for('posts.create_post') }}" class="btn btn-primary">Create Your First Post</a>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if posts.pages > 1 %}
+                <div class="card-footer">
+                    <nav aria-label="Feed pagination">
+                        <ul class="pagination pagination-sm justify-content-center mb-0">
+                            {% if posts.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('main.dashboard', page=posts.prev_num) }}">Previous</a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in posts.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != posts.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('main.dashboard', page=page_num) }}">{{ page_num }}</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">…</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if posts.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('main.dashboard', page=posts.next_num) }}">Next</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Notifications -->
+            {% if notifications %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-bell me-2"></i>Recent Notifications
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    {% for notification in notifications %}
+                    <div class="p-3 border-bottom">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-{{ 'comment' if notification.notification_type == 'comment' else 'bell' }} text-primary me-2"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <p class="mb-1 small">{{ notification.message }}</p>
+                                <small class="text-muted">{{ time_ago(notification.created_at) }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('main.notifications') }}" class="btn btn-link btn-sm">View All</a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Suggested Users -->
+            {% if suggested_users %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-user-plus me-2"></i>People to Follow
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    {% for user in suggested_users %}
+                    <div class="p-3 border-bottom d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            {% if user.profile_picture %}
+                                <img src="{{ user.profile_picture }}" alt="{{ user.get_full_name() }}" 
+                                     class="rounded-circle me-3" width="32" height="32">
+                            {% else %}
+                                <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                     style="width: 32px; height: 32px;">
+                                    <i class="fas fa-user text-white small"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0">
+                                <a href="{{ url_for('main.profile', username=user.username) }}" 
+                                   class="text-decoration-none">{{ user.get_full_name() }}</a>
+                            </h6>
+                            <small class="text-muted">{{ user.role.value.title() }}</small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <a href="{{ url_for('main.follow', username=user.username) }}" 
+                               class="btn btn-outline-primary btn-sm">Follow</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('posts.create_post') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-plus me-2"></i>Create Post
+                        </a>
+                        <a href="{{ url_for('messages.inbox') }}" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-envelope me-2"></i>Messages
+                        </a>
+                        <a href="{{ url_for('main.search') }}" class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-search me-2"></i>Explore
+                        </a>
+                        <a href="{{ url_for('auth.edit_profile') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-user-edit me-2"></i>Edit Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function likePost(postId) {
+    fetch(`/posts/${postId}/like`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById(`likes-${postId}`).textContent = data.likes;
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Filter feed
+document.querySelectorAll('input[name="feedFilter"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        // In a full implementation, this would filter the feed
+        console.log('Filter changed to:', this.id);
+    });
+});
+</script>
+{% endblock %}

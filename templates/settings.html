@@ -1,0 +1,416 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - MedPeer{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-3">
+            <!-- Settings Navigation -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>Settings
+                    </h6>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="#profile" class="list-group-item list-group-item-action active" data-bs-toggle="pill">
+                        <i class="fas fa-user me-2"></i>Profile
+                    </a>
+                    <a href="#privacy" class="list-group-item list-group-item-action" data-bs-toggle="pill">
+                        <i class="fas fa-lock me-2"></i>Privacy
+                    </a>
+                    <a href="#notifications" class="list-group-item list-group-item-action" data-bs-toggle="pill">
+                        <i class="fas fa-bell me-2"></i>Notifications
+                    </a>
+                    <a href="#security" class="list-group-item list-group-item-action" data-bs-toggle="pill">
+                        <i class="fas fa-shield-alt me-2"></i>Security
+                    </a>
+                    <a href="#account" class="list-group-item list-group-item-action" data-bs-toggle="pill">
+                        <i class="fas fa-user-cog me-2"></i>Account
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+            <div class="tab-content">
+                <!-- Profile Settings -->
+                <div class="tab-pane fade show active" id="profile">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Profile Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center mb-3">
+                                        {% if current_user.profile_picture %}
+                                            <img src="{{ current_user.profile_picture }}" alt="Profile" 
+                                                 class="rounded-circle me-3" width="60" height="60">
+                                        {% else %}
+                                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                                 style="width: 60px; height: 60px;">
+                                                <i class="fas fa-user fa-2x text-white"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <h6 class="mb-1">{{ current_user.get_full_name() }}</h6>
+                                            <p class="text-muted mb-0">@{{ current_user.username }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <a href="{{ url_for('auth.edit_profile') }}" class="btn btn-primary">
+                                        <i class="fas fa-edit me-1"></i>Edit Profile
+                                    </a>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Personal Information</h6>
+                                    <p><strong>Email:</strong> {{ current_user.email }}</p>
+                                    <p><strong>Role:</strong> {{ current_user.role.value.title() }}</p>
+                                    {% if current_user.institution %}
+                                        <p><strong>Institution:</strong> {{ current_user.institution }}</p>
+                                    {% endif %}
+                                    {% if current_user.specialty %}
+                                        <p><strong>Specialty:</strong> {{ current_user.specialty }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Account Status</h6>
+                                    <p>
+                                        <strong>Account Status:</strong> 
+                                        <span class="badge bg-success">Active</span>
+                                    </p>
+                                    <p>
+                                        <strong>Email Verified:</strong> 
+                                        {% if current_user.email_verified %}
+                                            <span class="badge bg-success">Yes</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% endif %}
+                                    </p>
+                                    <p><strong>Member Since:</strong> {{ current_user.created_at.strftime('%B %Y') }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Privacy Settings -->
+                <div class="tab-pane fade" id="privacy">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Privacy Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('main.settings') }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="section" value="privacy">
+
+                                <div class="mb-4">
+                                    <h6>Profile Visibility</h6>
+                                    <p class="text-muted">Control who can see your profile and posts</p>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="privacy_level" value="public" 
+                                               {% if current_user.privacy_level.value == 'public' %}checked{% endif %}>
+                                        <label class="form-check-label">
+                                            <strong>Public</strong> - Anyone can see your profile and posts
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="privacy_level" value="followers" 
+                                               {% if current_user.privacy_level.value == 'followers' %}checked{% endif %}>
+                                        <label class="form-check-label">
+                                            <strong>Followers Only</strong> - Only people you follow and who follow you
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="privacy_level" value="private" 
+                                               {% if current_user.privacy_level.value == 'private' %}checked{% endif %}>
+                                        <label class="form-check-label">
+                                            <strong>Private</strong> - Only you can see your content
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <h6>Who can message you?</h6>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="message_privacy" value="everyone" checked>
+                                        <label class="form-check-label">
+                                            Everyone
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="message_privacy" value="followers">
+                                        <label class="form-check-label">
+                                            Only people I follow
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary">Save Privacy Settings</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notification Settings -->
+                <div class="tab-pane fade" id="notifications">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Notification Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('main.settings') }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="section" value="notifications">
+
+                                <div class="mb-4">
+                                    <h6>Email Notifications</h6>
+                                    <p class="text-muted">Choose what notifications you'd like to receive via email</p>
+                                    
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="emailNewMessages" checked>
+                                        <label class="form-check-label" for="emailNewMessages">
+                                            New messages
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="emailComments" checked>
+                                        <label class="form-check-label" for="emailComments">
+                                            Comments on my posts
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="emailFollowers">
+                                        <label class="form-check-label" for="emailFollowers">
+                                            New followers
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="emailWeekly">
+                                        <label class="form-check-label" for="emailWeekly">
+                                            Weekly activity summary
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <h6>Push Notifications</h6>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="pushMessages" checked>
+                                        <label class="form-check-label" for="pushMessages">
+                                            New messages
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="pushComments" checked>
+                                        <label class="form-check-label" for="pushComments">
+                                            Comments and replies
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary">Save Notification Settings</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Settings -->
+                <div class="tab-pane fade" id="security">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Security Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-4">
+                                <h6>Password</h6>
+                                <p class="text-muted">Keep your account secure with a strong password</p>
+                                <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-key me-1"></i>Change Password
+                                </a>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6>Login Activity</h6>
+                                <p class="text-muted">Review recent login activity</p>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Location</th>
+                                                <th>Device</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>{{ current_user.last_seen.strftime('%Y-%m-%d %H:%M') if current_user.last_seen else 'Never' }}</td>
+                                                <td>Current Session</td>
+                                                <td>This Device</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6>Two-Factor Authentication</h6>
+                                <p class="text-muted">Add an extra layer of security to your account</p>
+                                <button class="btn btn-outline-success" disabled>
+                                    <i class="fas fa-mobile me-1"></i>Enable 2FA (Coming Soon)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Settings -->
+                <div class="tab-pane fade" id="account">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Account Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-4">
+                                <h6>Account Information</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Account ID:</strong> {{ current_user.id }}</p>
+                                        <p><strong>Username:</strong> {{ current_user.username }}</p>
+                                        <p><strong>Email:</strong> {{ current_user.email }}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Member Since:</strong> {{ current_user.created_at.strftime('%B %d, %Y') }}</p>
+                                        <p><strong>Posts:</strong> {{ current_user.posts.count() }}</p>
+                                        <p><strong>Comments:</strong> {{ current_user.comments.count() }}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6>Data Export</h6>
+                                <p class="text-muted">Download a copy of your data</p>
+                                <button class="btn btn-outline-info" disabled>
+                                    <i class="fas fa-download me-1"></i>Export My Data (Coming Soon)
+                                </button>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6 class="text-danger">Danger Zone</h6>
+                                <div class="border border-danger rounded p-3">
+                                    <div class="mb-3">
+                                        <h6>Deactivate Account</h6>
+                                        <p class="text-muted">Temporarily disable your account. You can reactivate it anytime.</p>
+                                        <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#deactivateModal">
+                                            Deactivate Account
+                                        </button>
+                                    </div>
+                                    
+                                    <div>
+                                        <h6>Delete Account</h6>
+                                        <p class="text-muted">Permanently delete your account and all data. This cannot be undone.</p>
+                                        <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                            Delete Account
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deactivate Account Modal -->
+<div class="modal fade" id="deactivateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Deactivate Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to deactivate your account? This will:</p>
+                <ul>
+                    <li>Hide your profile from other users</li>
+                    <li>Prevent you from posting or commenting</li>
+                    <li>Keep your data safe for when you return</li>
+                </ul>
+                <p>You can reactivate your account anytime by logging in.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning">Deactivate Account</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Account Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">Delete Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>This action cannot be undone!</h6>
+                    <p class="mb-0">Deleting your account will permanently remove:</p>
+                </div>
+                <ul>
+                    <li>Your profile and all personal information</li>
+                    <li>All your posts and comments</li>
+                    <li>Your messages and conversations</li>
+                    <li>All uploaded files</li>
+                    <li>Your followers and following relationships</li>
+                </ul>
+                <div class="mb-3">
+                    <label class="form-label">Type "DELETE" to confirm:</label>
+                    <input type="text" class="form-control" id="confirmDelete" placeholder="DELETE">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled>
+                    Delete My Account
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Confirm delete functionality
+document.getElementById('confirmDelete').addEventListener('input', function() {
+    const deleteBtn = document.getElementById('confirmDeleteBtn');
+    if (this.value === 'DELETE') {
+        deleteBtn.disabled = false;
+    } else {
+        deleteBtn.disabled = true;
+    }
+});
+
+// Handle settings form submissions
+document.querySelectorAll('form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+        // Add any form validation or AJAX submission here
+        console.log('Settings saved:', new FormData(form));
+    });
+});
+</script>
+{% endblock %}

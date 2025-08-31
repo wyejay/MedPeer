@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.get_full_name() }} - MedPeer{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Profile Header -->
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-body p-5">
+                    <div class="row align-items-center">
+                        <div class="col-md-3 text-center">
+                            {% if user.profile_picture %}
+                                <img src="{{ user.profile_picture }}" alt="{{ user.get_full_name() }}" 
+                                     class="rounded-circle mb-3" width="150" height="150" style="object-fit: cover;">
+                            {% else %}
+                                <div class="bg-secondary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                                     style="width: 150px; height: 150px;">
+                                    <i class="fas fa-user fa-4x text-white"></i>
+                                </div>
+                            {% endif %}
+                            
+                            {% if current_user.is_authenticated and current_user != user %}
+                                <div class="d-grid gap-2">
+                                    {% if current_user.is_following(user) %}
+                                        <a href="{{ url_for('main.unfollow', username=user.username) }}" class="btn btn-outline-primary">
+                                            <i class="fas fa-user-minus me-1"></i>Unfollow
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ url_for('main.follow', username=user.username) }}" class="btn btn-primary">
+                                            <i class="fas fa-user-plus me-1"></i>Follow
+                                        </a>
+                                    {% endif %}
+                                    <a href="{{ url_for('messages.compose', user_id=user.id) }}" class="btn btn-outline-info">
+                                        <i class="fas fa-envelope me-1"></i>Message
+                                    </a>
+                                </div>
+                            {% elif current_user == user %}
+                                <div class="d-grid">
+                                    <a href="{{ url_for('auth.edit_profile') }}" class="btn btn-primary">
+                                        <i class="fas fa-edit me-1"></i>Edit Profile
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-9">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h1 class="display-6 fw-bold mb-1">{{ user.get_full_name() }}</h1>
+                                    <p class="text-muted mb-0">@{{ user.username }}</p>
+                                </div>
+                                {% if current_user.is_authenticated and current_user != user %}
+                                    <div class="dropdown">
+                                        <button class="btn btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-h"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#reportModal">
+                                                <i class="fas fa-flag me-2"></i>Report User
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-2">
+                                        <i class="fas fa-stethoscope text-primary me-2"></i>
+                                        <strong>{{ user.role.value.title() }}</strong>
+                                    </div>
+                                    {% if user.institution %}
+                                        <div class="mb-2">
+                                            <i class="fas fa-university text-primary me-2"></i>
+                                            {{ user.institution }}
+                                        </div>
+                                    {% endif %}
+                                    {% if user.specialty %}
+                                        <div class="mb-2">
+                                            <i class="fas fa-medal text-primary me-2"></i>
+                                            {{ user.specialty }}
+                                        </div>
+                                    {% endif %}
+                                    {% if user.year_level %}
+                                        <div class="mb-2">
+                                            <i class="fas fa-graduation-cap text-primary me-2"></i>
+                                            {{ user.year_level }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    {% if user.location %}
+                                        <div class="mb-2">
+                                            <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                                            {{ user.location }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="mb-2">
+                                        <i class="fas fa-calendar text-primary me-2"></i>
+                                        Joined {{ user.created_at.strftime('%B %Y') }}
+                                    </div>
+                                    {% if user.website %}
+                                        <div class="mb-2">
+                                            <i class="fas fa-globe text-primary me-2"></i>
+                                            <a href="{{ user.website }}" target="_blank" class="text-decoration-none">Website</a>
+                                        </div>
+                                    {% endif %}
+                                    {% if user.linkedin %}
+                                        <div class="mb-2">
+                                            <i class="fab fa-linkedin text-primary me-2"></i>
+                                            <a href="{{ user.linkedin }}" target="_blank" class="text-decoration-none">LinkedIn</a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            {% if user.bio %}
+                                <p class="mb-3">{{ user.bio }}</p>
+                            {% endif %}
+
+                            <!-- Stats -->
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <div class="border-end">
+                                        <h5 class="fw-bold text-primary">{{ user.posts.count() }}</h5>
+                                        <small class="text-muted">Posts</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="border-end">
+                                        <h5 class="fw-bold text-primary">{{ user.followers.count() }}</h5>
+                                        <small class="text-muted">Followers</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <h5 class="fw-bold text-primary">{{ user.followed.count() }}</h5>
+                                    <small class="text-muted">Following</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Posts -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>Posts by {{ user.first_name }}
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if posts.items %}
+                        {% for post in posts.items %}
+                        <div class="border-bottom p-4">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <span class="badge bg-primary">{{ post.post_type.value.title() }}</span>
+                                    <small class="text-muted ms-2">{{ time_ago(post.created_at) }}</small>
+                                </div>
+                                {% if current_user == user %}
+                                    <div class="dropdown">
+                                        <button class="btn btn-link btn-sm" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-h"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><a class="dropdown-item" href="{{ url_for('posts.edit_post', id=post.id) }}">
+                                                <i class="fas fa-edit me-2"></i>Edit
+                                            </a></li>
+                                            <li><a class="dropdown-item text-danger" href="#" onclick="deletePost({{ post.id }})">
+                                                <i class="fas fa-trash me-2"></i>Delete
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <h5 class="mb-2">
+                                <a href="{{ url_for('posts.view_post', id=post.id) }}" class="text-decoration-none text-dark">
+                                    {{ post.title }}
+                                </a>
+                            </h5>
+                            
+                            <div class="mb-3">
+                                {{ post.content[:300] | safe }}
+                                {% if post.content|length > 300 %}
+                                    <a href="{{ url_for('posts.view_post', id=post.id) }}" class="text-primary">...read more</a>
+                                {% endif %}
+                            </div>
+
+                            {% if post.files.count() > 0 %}
+                                <div class="mb-3">
+                                    {% for file in post.files %}
+                                        <span class="badge bg-light text-dark me-2">
+                                            <i class="fas fa-paperclip me-1"></i>{{ file.original_filename }}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex gap-3">
+                                    <span class="text-muted small">
+                                        <i class="fas fa-heart me-1"></i>{{ post.likes }}
+                                    </span>
+                                    <span class="text-muted small">
+                                        <i class="fas fa-comment me-1"></i>{{ post.comments.filter_by(is_deleted=False).count() }}
+                                    </span>
+                                    <span class="text-muted small">
+                                        <i class="fas fa-eye me-1"></i>{{ post.views }}
+                                    </span>
+                                </div>
+                                <a href="{{ url_for('posts.view_post', id=post.id) }}" class="btn btn-outline-primary btn-sm">
+                                    View Post
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-5 text-center">
+                            <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                            <h5>No posts yet</h5>
+                            <p class="text-muted">
+                                {% if current_user == user %}
+                                    You haven't created any posts yet.
+                                {% else %}
+                                    {{ user.first_name }} hasn't posted anything yet.
+                                {% endif %}
+                            </p>
+                            {% if current_user == user %}
+                                <a href="{{ url_for('posts.create_post') }}" class="btn btn-primary">Create Your First Post</a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Pagination -->
+                {% if posts.pages > 1 %}
+                <div class="card-footer">
+                    <nav aria-label="Posts pagination">
+                        <ul class="pagination pagination-sm justify-content-center mb-0">
+                            {% if posts.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('main.profile', username=user.username, page=posts.prev_num) }}">Previous</a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in posts.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != posts.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('main.profile', username=user.username, page=page_num) }}">{{ page_num }}</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">…</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if posts.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('main.profile', username=user.username, page=posts.next_num) }}">Next</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deletePost(postId) {
+    if (confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+        fetch(`/posts/${postId}/delete`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+}
+</script>
+{% endblock %}

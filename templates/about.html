@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}About MedPeer{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Hero Section -->
+            <div class="text-center mb-5">
+                <h1 class="display-4 fw-bold text-primary mb-3">About MedPeer</h1>
+                <p class="lead text-muted">
+                    Empowering medical professionals through connection, collaboration, and shared knowledge
+                </p>
+            </div>
+
+            <!-- Mission Section -->
+            <div class="card mb-4">
+                <div class="card-body p-5">
+                    <h2 class="h3 mb-4">
+                        <i class="fas fa-bullseye text-primary me-2"></i>Our Mission
+                    </h2>
+                    <p class="lead">
+                        MedPeer is dedicated to creating a safe, professional, and collaborative environment 
+                        where medical students and healthcare professionals can connect, share knowledge, 
+                        and support each other's professional growth.
+                    </p>
+                    <p>
+                        We believe that medicine is a collaborative field where the sharing of knowledge 
+                        and experiences can lead to better patient outcomes and professional development. 
+                        Our platform serves as a bridge connecting medical minds across the globe.
+                    </p>
+                </div>
+            </div>
+
+            <!-- What We Offer -->
+            <div class="card mb-4">
+                <div class="card-body p-5">
+                    <h2 class="h3 mb-4">
+                        <i class="fas fa-heart text-primary me-2"></i>What We Offer
+                    </h2>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-3">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Professional Networking:</strong> Connect with peers in your specialty
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Resource Sharing:</strong> Upload and access educational materials
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Discussion Forums:</strong> Engage in meaningful professional discussions
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-3">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Direct Messaging:</strong> Private communication with colleagues
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Study Groups:</strong> Collaborate on learning objectives
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Career Support:</strong> Mentorship and professional guidance
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Our Community -->
+            <div class="card mb-4">
+                <div class="card-body p-5">
+                    <h2 class="h3 mb-4">
+                        <i class="fas fa-users text-primary me-2"></i>Our Community
+                    </h2>
+                    <p>
+                        MedPeer welcomes medical professionals at all stages of their careers:
+                    </p>
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <h5 class="text-primary">Students</h5>
+                            <ul>
+                                <li>Medical students</li>
+                                <li>Nursing students</li>
+                                <li>Pharmacy students</li>
+                                <li>Allied health students</li>
+                            </ul>
+                        </div>
+                        <div class="col-lg-6">
+                            <h5 class="text-primary">Professionals</h5>
+                            <ul>
+                                <li>Practicing physicians</li>
+                                <li>Registered nurses</li>
+                                <li>Pharmacists</li>
+                                <li>Laboratory scientists</li>
+                                <li>Allied health professionals</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Safety & Privacy -->
+            <div class="card mb-4">
+                <div class="card-body p-5">
+                    <h2 class="h3 mb-4">
+                        <i class="fas fa-shield-alt text-primary me-2"></i>Safety & Privacy
+                    </h2>
+                    <p>
+                        We take the privacy and security of our community seriously:
+                    </p>
+                    <ul>
+                        <li><strong>Verified Accounts:</strong> All members undergo verification to ensure authenticity</li>
+                        <li><strong>Content Moderation:</strong> Our team actively monitors content to maintain professional standards</li>
+                        <li><strong>Privacy Controls:</strong> Granular privacy settings to control who sees your information</li>
+                        <li><strong>Data Security:</strong> Industry-standard encryption and security measures</li>
+                        <li><strong>HIPAA Awareness:</strong> Guidelines to ensure patient privacy is always protected</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Contact Us -->
+            <div class="text-center">
+                <h2 class="h3 mb-4">Get In Touch</h2>
+                <p class="mb-4">
+                    Have questions or suggestions? We'd love to hear from you.
+                </p>
+                <a href="{{ url_for('main.contact') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-envelope me-2"></i>Contact Us
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

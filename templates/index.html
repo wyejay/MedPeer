@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}MedPeer - Social Network for Medical Professionals{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section bg-gradient-primary text-white py-5">
+    <div class="container">
+        <div class="row align-items-center min-vh-75">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">Connect. Learn. Collaborate.</h1>
+                <p class="lead mb-4">
+                    Join the premier social network for medical students and healthcare professionals. 
+                    Share knowledge, connect with peers, and advance your medical career.
+                </p>
+                <div class="d-flex flex-wrap gap-3">
+                    {% if not current_user.is_authenticated %}
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-lg">
+                            <i class="fas fa-user-plus me-2"></i>Join MedPeer
+                        </a>
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-light btn-lg">
+                            <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="hero-image">
+                    <img src="https://pixabay.com/get/gbca116db89496d66ecb13d885d1ce02c0b1e11227624eb9b5b2f32beec7a40d33070b602d74d4eae15db5045fba0c72179c1a429c303ecd3bc11c5170ab1f500_1280.jpg" 
+                         alt="Medical students studying" class="img-fluid rounded shadow-lg">
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 text-center mb-5">
+                <h2 class="fw-bold">Why Choose MedPeer?</h2>
+                <p class="text-muted">Everything you need to connect with the medical community</p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card text-center p-4 h-100">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-users fa-3x text-primary"></i>
+                    </div>
+                    <h5>Professional Network</h5>
+                    <p class="text-muted">Connect with medical students, doctors, nurses, and other healthcare professionals worldwide.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card text-center p-4 h-100">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-book-medical fa-3x text-primary"></i>
+                    </div>
+                    <h5>Share Resources</h5>
+                    <p class="text-muted">Upload and share study materials, research papers, and educational content with the community.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card text-center p-4 h-100">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-comments fa-3x text-primary"></i>
+                    </div>
+                    <h5>Discussion Forums</h5>
+                    <p class="text-muted">Engage in meaningful discussions, ask questions, and share experiences with peers.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card text-center p-4 h-100">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-graduation-cap fa-3x text-primary"></i>
+                    </div>
+                    <h5>Career Growth</h5>
+                    <p class="text-muted">Access opportunities, mentorship, and career guidance from experienced professionals.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Community Stats Section -->
+{% if not current_user.is_authenticated %}
+<section class="bg-light py-5">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <h3 class="fw-bold text-primary">10,000+</h3>
+                    <p class="text-muted">Active Members</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <h3 class="fw-bold text-primary">50+</h3>
+                    <p class="text-muted">Specialties</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <h3 class="fw-bold text-primary">100+</h3>
+                    <p class="text-muted">Institutions</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <h3 class="fw-bold text-primary">25+</h3>
+                    <p class="text-muted">Countries</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Recent Posts Section -->
+{% if current_user.is_authenticated or featured_posts %}
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <h2 class="fw-bold mb-4">
+                    {% if current_user.is_authenticated %}Recent Discussions{% else %}Featured Posts{% endif %}
+                </h2>
+            </div>
+        </div>
+        
+        <div class="row">
+            {% if featured_posts %}
+                {% for post in featured_posts %}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card post-preview h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="badge bg-primary me-2">{{ post.post_type.value.title() }}</div>
+                                <small class="text-muted">{{ time_ago(post.created_at) }}</small>
+                            </div>
+                            <h6 class="card-title">{{ post.title }}</h6>
+                            <p class="card-text text-muted">
+                                {{ post.content[:100] }}{% if post.content|length > 100 %}...{% endif %}
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-user me-1"></i>{{ post.author.get_full_name() }}
+                                </small>
+                                <div>
+                                    <small class="text-muted me-2">
+                                        <i class="fas fa-eye me-1"></i>{{ post.views }}
+                                    </small>
+                                    <small class="text-muted">
+                                        <i class="fas fa-heart me-1"></i>{{ post.likes }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12 text-center">
+                    <p class="text-muted">No posts available yet. Be the first to share!</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        {% if current_user.is_authenticated %}
+        <div class="text-center">
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">
+                View All Posts <i class="fas fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+<!-- CTA Section -->
+{% if not current_user.is_authenticated %}
+<section class="cta-section bg-primary text-white py-5">
+    <div class="container text-center">
+        <h2 class="fw-bold mb-3">Ready to Join the Community?</h2>
+        <p class="lead mb-4">Connect with thousands of medical professionals and students worldwide</p>
+        <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-lg">
+            <i class="fas fa-rocket me-2"></i>Get Started Today
+        </a>
+    </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.hero-section {
+    background: linear-gradient(135deg, var(--bs-primary) 0%, #0056b3 100%);
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+}
+
+.min-vh-75 {
+    min-height: 75vh;
+}
+
+.feature-card {
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+}
+
+.stat-item h3 {
+    font-size: 2.5rem;
+}
+
+.post-preview {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.post-preview:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
+}
+
+.cta-section {
+    background: linear-gradient(135deg, var(--bs-primary) 0%, #0056b3 100%);
+}
+</style>
+{% endblock %}

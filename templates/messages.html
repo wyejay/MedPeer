@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+
+{% block title %}Messages - MedPeer{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold">
+                    <i class="fas fa-envelope me-2"></i>Messages
+                </h2>
+                <div>
+                    <a href="{{ url_for('messages.search') }}" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-search me-1"></i>Search
+                    </a>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#composeModal">
+                        <i class="fas fa-plus me-1"></i>New Message
+                    </button>
+                </div>
+            </div>
+
+            <!-- Message Tabs -->
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" id="messageTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="inbox-tab" data-bs-toggle="tab" data-bs-target="#inbox" 
+                                    type="button" role="tab" aria-controls="inbox" aria-selected="true">
+                                <i class="fas fa-inbox me-1"></i>Inbox
+                                <span class="badge bg-primary ms-1" id="unread-count" style="display: none;"></span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="sent-tab" data-bs-toggle="tab" data-bs-target="#sent" 
+                                    type="button" role="tab" aria-controls="sent" aria-selected="false">
+                                <i class="fas fa-paper-plane me-1"></i>Sent
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="archived-tab" data-bs-toggle="tab" data-bs-target="#archived" 
+                                    type="button" role="tab" aria-controls="archived" aria-selected="false">
+                                <i class="fas fa-archive me-1"></i>Archived
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body p-0">
+                    <div class="tab-content" id="messageTabContent">
+                        <!-- Inbox Tab -->
+                        <div class="tab-pane fade show active" id="inbox" role="tabpanel" aria-labelledby="inbox-tab">
+                            <div class="message-list" id="inboxMessages">
+                                <!-- Messages will be loaded here -->
+                                <div class="p-4 text-center text-muted">
+                                    <i class="fas fa-envelope fa-3x mb-3"></i>
+                                    <h5>No messages in inbox</h5>
+                                    <p>When you receive messages, they'll appear here</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sent Tab -->
+                        <div class="tab-pane fade" id="sent" role="tabpanel" aria-labelledby="sent-tab">
+                            <div class="message-list" id="sentMessages">
+                                <div class="p-4 text-center text-muted">
+                                    <i class="fas fa-paper-plane fa-3x mb-3"></i>
+                                    <h5>No sent messages</h5>
+                                    <p>Messages you send will appear here</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Archived Tab -->
+                        <div class="tab-pane fade" id="archived" role="tabpanel" aria-labelledby="archived-tab">
+                            <div class="message-list" id="archivedMessages">
+                                <div class="p-4 text-center text-muted">
+                                    <i class="fas fa-archive fa-3x mb-3"></i>
+                                    <h5>No archived messages</h5>
+                                    <p>Archived conversations will appear here</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                            <h6>Find Colleagues</h6>
+                            <p class="text-muted small">Connect with other medical professionals</p>
+                            <a href="{{ url_for('main.search') }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-search me-1"></i>Search Users
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-star fa-3x text-warning mb-3"></i>
+                            <h6>Favorites</h6>
+                            <p class="text-muted small">Your most contacted professionals</p>
+                            <button class="btn btn-outline-warning btn-sm" disabled>
+                                <i class="fas fa-heart me-1"></i>Coming Soon
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Compose Modal -->
+<div class="modal fade" id="composeModal" tabindex="-1" aria-labelledby="composeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="composeModalLabel">
+                    <i class="fas fa-edit me-2"></i>Compose Message
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="composeForm">
+                    <div class="mb-3">
+                        <label for="recipient" class="form-label">To:</label>
+                        <input type="text" class="form-control" id="recipient" placeholder="Search for a user...">
+                        <div class="form-text">Start typing to search for medical professionals</div>
+                        <div id="recipientSuggestions" class="list-group mt-2" style="display: none;"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">Subject:</label>
+                        <input type="text" class="form-control" id="subject" placeholder="What's this message about?">
+                    </div>
+                    <div class="mb-3">
+                        <label for="messageContent" class="form-label">Message:</label>
+                        <textarea class="form-control" id="messageContent" rows="6" placeholder="Type your message here..."></textarea>
+                        <div class="form-text">
+                            <small class="text-muted">
+                                <i class="fas fa-shield-alt me-1"></i>
+                                Remember to keep patient information confidential and de-identified
+                            </small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="attachments" class="form-label">Attachments:</label>
+                        <input type="file" class="form-control" id="attachments" multiple 
+                               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                        <div class="form-text">Max 5MB per file. Supported: PDF, DOC, DOCX, JPG, PNG</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="sendMessage()">
+                    <i class="fas fa-paper-plane me-1"></i>Send Message
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Mock data for demonstration
+const mockMessages = [
+    {
+        id: 1,
+        sender: { name: "Dr. Sarah Johnson", username: "sjohnson", role: "Cardiologist" },
+        recipient: "You",
+        subject: "Research Collaboration Opportunity",
+        preview: "I came across your recent publication on cardiac imaging and would love to discuss...",
+        timestamp: "2 hours ago",
+        unread: true,
+        type: "received"
+    },
+    {
+        id: 2,
+        sender: "You",
+        recipient: { name: "Mike Chen", username: "mchen", role: "Medical Student" },
+        subject: "Study Group Formation",
+        preview: "Hi Mike, I'm organizing a study group for the upcoming cardiology rotation...",
+        timestamp: "1 day ago",
+        unread: false,
+        type: "sent"
+    },
+    {
+        id: 3,
+        sender: { name: "Prof. Maria Garcia", username: "mgarcia", role: "Professor" },
+        recipient: "You",
+        subject: "Thesis Review Feedback",
+        preview: "Your thesis draft shows excellent progress. I have a few suggestions for improvement...",
+        timestamp: "3 days ago",
+        unread: false,
+        type: "received"
+    }
+];
+
+function loadMessages() {
+    const inboxMessages = mockMessages.filter(msg => msg.type === 'received');
+    const sentMessages = mockMessages.filter(msg => msg.type === 'sent');
+    
+    displayMessages(inboxMessages, 'inboxMessages');
+    displayMessages(sentMessages, 'sentMessages');
+    
+    // Update unread count
+    const unreadCount = inboxMessages.filter(msg => msg.unread).length;
+    const unreadBadge = document.getElementById('unread-count');
+    if (unreadCount > 0) {
+        unreadBadge.textContent = unreadCount;
+        unreadBadge.style.display = 'inline';
+    }
+}
+
+function displayMessages(messages, containerId) {
+    const container = document.getElementById(containerId);
+    
+    if (messages.length === 0) {
+        return; // Keep the empty state
+    }
+    
+    container.innerHTML = '';
+    
+    messages.forEach(message => {
+        const messageElement = document.createElement('div');
+        messageElement.className = `message-item border-bottom ${message.unread ? 'bg-light' : ''} hover-bg-light`;
+        messageElement.innerHTML = `
+            <div class="p-4 cursor-pointer" onclick="openMessage(${message.id})">
+                <div class="d-flex align-items-start">
+                    <div class="flex-shrink-0 me-3">
+                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 40px; height: 40px;">
+                            <i class="fas fa-user text-white"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="mb-1 fw-bold">
+                                    ${message.type === 'received' ? message.sender.name : `To: ${message.recipient.name || message.recipient}`}
+                                </h6>
+                                <p class="mb-1 text-muted small">
+                                    ${message.type === 'received' ? message.sender.role : ''}
+                                </p>
+                            </div>
+                            <small class="text-muted">${message.timestamp}</small>
+                        </div>
+                        <h6 class="mb-2">${message.subject}</h6>
+                        <p class="text-muted mb-0">${message.preview}</p>
+                        ${message.unread ? '<span class="badge bg-primary mt-2">New</span>' : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(messageElement);
+    });
+}
+
+function openMessage(messageId) {
+    // In a real app, this would open the full message view
+    const message = mockMessages.find(m => m.id === messageId);
+    if (message) {
+        alert(`Opening message: "${message.subject}"\n\nThis would open the full conversation view in a real application.`);
+    }
+}
+
+// User search for compose
+let searchTimeout;
+document.getElementById('recipient').addEventListener('input', function() {
+    const query = this.value.trim();
+    clearTimeout(searchTimeout);
+    
+    if (query.length < 2) {
+        document.getElementById('recipientSuggestions').style.display = 'none';
+        return;
+    }
+    
+    searchTimeout = setTimeout(() => {
+        searchUsers(query);
+    }, 300);
+});
+
+function searchUsers(query) {
+    // Mock user search results
+    const mockUsers = [
+        { name: "Dr. Sarah Johnson", username: "sjohnson", role: "Cardiologist", institution: "General Hospital" },
+        { name: "Mike Chen", username: "mchen", role: "Medical Student", institution: "Medical University" },
+        { name: "Dr. Emily Davis", username: "edavis", role: "Pediatrician", institution: "Children's Hospital" }
+    ].filter(user => 
+        user.name.toLowerCase().includes(query.toLowerCase()) ||
+        user.username.toLowerCase().includes(query.toLowerCase())
+    );
+    
+    const suggestions = document.getElementById('recipientSuggestions');
+    suggestions.innerHTML = '';
+    
+    if (mockUsers.length > 0) {
+        mockUsers.forEach(user => {
+            const item = document.createElement('a');
+            item.href = '#';
+            item.className = 'list-group-item list-group-item-action';
+            item.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <strong>${user.name}</strong>
+                        <small class="text-muted d-block">@${user.username} • ${user.role}</small>
+                        <small class="text-muted">${user.institution}</small>
+                    </div>
+                </div>
+            `;
+            item.onclick = (e) => {
+                e.preventDefault();
+                selectRecipient(user);
+            };
+            suggestions.appendChild(item);
+        });
+        suggestions.style.display = 'block';
+    } else {
+        suggestions.innerHTML = '<div class="list-group-item text-muted">No users found</div>';
+        suggestions.style.display = 'block';
+    }
+}
+
+function selectRecipient(user) {
+    document.getElementById('recipient').value = `${user.name} (@${user.username})`;
+    document.getElementById('recipientSuggestions').style.display = 'none';
+}
+
+function sendMessage() {
+    const recipient = document.getElementById('recipient').value;
+    const subject = document.getElementById('subject').value;
+    const content = document.getElementById('messageContent').value;
+    
+    if (!recipient || !subject || !content) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    // In a real app, this would send the message via API
+    alert('Message sent successfully!\n\nThis is a demo. In the real application, your message would be sent to the recipient.');
+    
+    // Reset form and close modal
+    document.getElementById('composeForm').reset();
+    const modal = bootstrap.Modal.getInstance(document.getElementById('composeModal'));
+    modal.hide();
+}
+
+// Load messages when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadMessages();
+});
+
+// Style for hover effect
+const style = document.createElement('style');
+style.textContent = `
+    .hover-bg-light:hover {
+        background-color: var(--bs-gray-100) !important;
+    }
+    .cursor-pointer {
+        cursor: pointer;
+    }
+    .message-item {
+        transition: background-color 0.2s ease;
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}
