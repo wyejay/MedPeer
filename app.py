@@ -1,25 +1,13 @@
 import os
 import logging
 from flask import Flask, render_template
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
-from flask_mail import Mail
-from flask_wtf.csrf import CSRFProtect
-from flask_migrate import Migrate
-from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
+
+# Import shared extensions
+from extensions import db, login_manager, mail, csrf, migrate
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
-
-class Base(DeclarativeBase):
-    pass
-
-db = SQLAlchemy(model_class=Base)
-login_manager = LoginManager()
-mail = Mail()
-csrf = CSRFProtect()
-migrate = Migrate()
 
 def create_app(config_name='default'):
     app = Flask(__name__)
