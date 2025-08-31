@@ -66,7 +66,7 @@ def create_app(config_name='default'):
     def not_found(error):
         return render_template('errors/404.html'), 404
     
-        @app.errorhandler(500)
+    @app.errorhandler(500)
     def internal_error(error):
         app.logger.error(f"500 error: {error}")  # log the real error to Render logs
         return render_template('errors/500.html'), 500
