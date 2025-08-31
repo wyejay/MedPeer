@@ -13,3 +13,4 @@ Werkzeug
 bleach
 gunicorn
 psycopg2-binary
+email-validator
