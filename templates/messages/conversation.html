@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}Conversation with {{ user.get_full_name() }} - MedPeer{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="card mb-3">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <a href="{{ url_for('messages.inbox') }}" class="btn btn-outline-secondary btn-sm me-3">
+                                <i class="fas fa-arrow-left"></i>
+                            </a>
+                            <div class="d-flex align-items-center">
+                                {% if user.profile_picture %}
+                                    <img src="{{ user.profile_picture }}" alt="{{ user.get_full_name() }}" 
+                                         class="rounded-circle me-3" width="40" height="40">
+                                {% else %}
+                                    <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user text-white"></i>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ user.get_full_name() }}</h6>
+                                    <small class="text-muted">{{ user.role.value.title() }} • Online</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('main.profile', username=user.username) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-user me-1"></i>View Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages Container -->
+            <div class="card">
+                <div class="card-body" style="height: 400px; overflow-y: auto;" id="messagesContainer">
+                    {% if messages.items %}
+                        {% for message in messages.items %}
+                        <div class="d-flex mb-3 {% if message.sender == current_user %}justify-content-end{% endif %}">
+                            <div class="{% if message.sender == current_user %}order-2{% endif %}">
+                                {% if message.sender.profile_picture %}
+                                    <img src="{{ message.sender.profile_picture }}" alt="{{ message.sender.get_full_name() }}" 
+                                         class="rounded-circle" width="32" height="32">
+                                {% else %}
+                                    <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" 
+                                         style="width: 32px; height: 32px;">
+                                        <i class="fas fa-user text-white small"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="{% if message.sender == current_user %}order-1 me-3 text-end{% else %}ms-3{% endif %} flex-grow-1" style="max-width: 70%;">
+                                <div class="{% if message.sender == current_user %}bg-primary text-white{% else %}bg-light{% endif %} rounded p-3">
+                                    <p class="mb-1">{{ message.content }}</p>
+                                    
+                                    <!-- Message Files -->
+                                    {% if message.files.count() > 0 %}
+                                        <div class="mt-2">
+                                            {% for file in message.files %}
+                                                <div class="d-flex align-items-center {% if message.sender == current_user %}text-white-50{% else %}text-muted{% endif %} small">
+                                                    <i class="fas fa-paperclip me-1"></i>
+                                                    <a href="{{ url_for('posts.download_file', file_id=file.id) }}" 
+                                                       class="{% if message.sender == current_user %}text-white{% else %}text-primary{% endif %} text-decoration-none">
+                                                        {{ file.original_filename }}
+                                                    </a>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <small class="{% if message.sender == current_user %}text-muted{% else %}text-muted{% endif %} d-block mt-1">
+                                    {{ time_ago(message.created_at) }}
+                                    {% if message.sender == current_user %}
+                                        {% if message.is_read %}
+                                            <i class="fas fa-check-double text-primary" title="Read"></i>
+                                        {% else %}
+                                            <i class="fas fa-check text-muted" title="Delivered"></i>
+                                        {% endif %}
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                            <h6 class="text-muted">No messages yet</h6>
+                            <p class="text-muted">Start the conversation below</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Message Input -->
+                <div class="card-footer">
+                    <form method="POST" action="{{ url_for('messages.send_message') }}" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        {{ form.recipient_id() }}
+                        
+                        <div class="input-group">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#attachModal">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            {{ form.content(class="form-control", placeholder="Type a message...", rows="1") }}
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                        
+                        <!-- Hidden file input -->
+                        <div id="fileInputs" style="display: none;"></div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if messages.pages > 1 %}
+            <div class="text-center mt-3">
+                <nav aria-label="Messages pagination">
+                    <ul class="pagination pagination-sm justify-content-center">
+                        {% if messages.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('messages.conversation', user_id=user.id, page=messages.prev_num) }}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in messages.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != messages.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('messages.conversation', user_id=user.id, page=page_num) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if messages.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('messages.conversation', user_id=user.id, page=messages.next_num) }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Attachment Modal -->
+<div class="modal fade" id="attachModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Attach Files</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="file" class="form-control" id="fileAttachment" multiple accept=".pdf,.doc,.docx,.png,.jpg,.jpeg">
+                <div class="form-text">
+                    <small>You can attach images, PDFs, and documents (max 5MB each)</small>
+                </div>
+                <div id="selectedFiles" class="mt-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="attachFiles()">Attach</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-scroll to bottom
+function scrollToBottom() {
+    const container = document.getElementById('messagesContainer');
+    container.scrollTop = container.scrollHeight;
+}
+
+// Scroll to bottom on page load
+document.addEventListener('DOMContentLoaded', scrollToBottom);
+
+// Auto-resize textarea
+document.getElementById('content').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+});
+
+// File attachment handling
+let selectedFiles = [];
+
+document.getElementById('fileAttachment').addEventListener('change', function() {
+    const files = Array.from(this.files);
+    const container = document.getElementById('selectedFiles');
+    container.innerHTML = '';
+    
+    files.forEach((file, index) => {
+        const fileDiv = document.createElement('div');
+        fileDiv.className = 'd-flex justify-content-between align-items-center p-2 border rounded mb-2';
+        fileDiv.innerHTML = `
+            <div>
+                <i class="fas fa-file me-2"></i>
+                <span>${file.name}</span>
+                <small class="text-muted ms-2">(${(file.size / 1024 / 1024).toFixed(2)} MB)</small>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFile(${index})">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        container.appendChild(fileDiv);
+    });
+    
+    selectedFiles = files;
+});
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    
+    // Update file input
+    const dt = new DataTransfer();
+    selectedFiles.forEach(file => dt.items.add(file));
+    document.getElementById('fileAttachment').files = dt.files;
+    
+    // Trigger change event to update display
+    document.getElementById('fileAttachment').dispatchEvent(new Event('change'));
+}
+
+function attachFiles() {
+    const form = document.querySelector('form');
+    const fileInputsContainer = document.getElementById('fileInputs');
+    
+    // Clear existing file inputs
+    fileInputsContainer.innerHTML = '';
+    
+    // Add file inputs to form
+    selectedFiles.forEach((file, index) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.name = 'files';
+        input.style.display = 'none';
+        
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        
+        fileInputsContainer.appendChild(input);
+    });
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('attachModal'));
+    modal.hide();
+    
+    // Show attached files indicator
+    if (selectedFiles.length > 0) {
+        const indicator = document.createElement('small');
+        indicator.className = 'text-muted';
+        indicator.textContent = `${selectedFiles.length} file(s) attached`;
+        form.appendChild(indicator);
+    }
+}
+
+// Auto-refresh messages every 5 seconds
+setInterval(() => {
+    // In a full implementation, you would fetch new messages via AJAX
+    // For now, just reload if the user is at the bottom of the conversation
+    const container = document.getElementById('messagesContainer');
+    const isAtBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 1;
+    
+    if (isAtBottom) {
+        // Reload would happen here
+    }
+}, 5000);
+
+// Enter key to send message
+document.getElementById('content').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        this.form.submit();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Messages - MedPeer{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold">
+                    <i class="fas fa-inbox me-2"></i>Messages
+                </h2>
+                <div>
+                    <a href="{{ url_for('messages.search') }}" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-search me-1"></i>Search
+                    </a>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#composeModal">
+                        <i class="fas fa-plus me-1"></i>New Message
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body p-0">
+                    {% if conversations.items %}
+                        {% for message in conversations.items %}
+                        {% set other_user = message.sender if message.sender != current_user else message.recipient %}
+                        <div class="border-bottom">
+                            <a href="{{ url_for('messages.conversation', user_id=other_user.id) }}" 
+                               class="text-decoration-none text-dark">
+                                <div class="p-4 hover-bg-light">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0 me-3">
+                                            {% if other_user.profile_picture %}
+                                                <img src="{{ other_user.profile_picture }}" alt="{{ other_user.get_full_name() }}" 
+                                                     class="rounded-circle" width="50" height="50">
+                                            {% else %}
+                                                <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" 
+                                                     style="width: 50px; height: 50px;">
+                                                    <i class="fas fa-user text-white"></i>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h6 class="mb-1 fw-bold">{{ other_user.get_full_name() }}</h6>
+                                                    <p class="mb-1 text-muted">
+                                                        {% if message.sender == current_user %}
+                                                            <span class="text-primary">You:</span>
+                                                        {% endif %}
+                                                        {{ message.content[:50] }}{% if message.content|length > 50 %}...{% endif %}
+                                                    </p>
+                                                </div>
+                                                <div class="text-end">
+                                                    <small class="text-muted">{{ time_ago(message.created_at) }}</small>
+                                                    {% if message.recipient == current_user and not message.is_read %}
+                                                        <div class="mt-1">
+                                                            <span class="badge bg-primary">New</span>
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="d-flex align-items-center">
+                                                <small class="text-muted">{{ other_user.role.value.title() }}</small>
+                                                {% if message.files.count() > 0 %}
+                                                    <i class="fas fa-paperclip text-muted ms-2"></i>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-5 text-center">
+                            <i class="fas fa-envelope fa-3x text-muted mb-3"></i>
+                            <h5>No messages yet</h5>
+                            <p class="text-muted">Start a conversation with your colleagues</p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#composeModal">
+                                <i class="fas fa-plus me-1"></i>Send Your First Message
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Pagination -->
+                {% if conversations.pages > 1 %}
+                <div class="card-footer">
+                    <nav aria-label="Messages pagination">
+                        <ul class="pagination pagination-sm justify-content-center mb-0">
+                            {% if conversations.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('messages.inbox', page=conversations.prev_num) }}">Previous</a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in conversations.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != conversations.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('messages.inbox', page=page_num) }}">{{ page_num }}</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">…</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if conversations.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('messages.inbox', page=conversations.next_num) }}">Next</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Compose Modal -->
+<div class="modal fade" id="composeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">New Message</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">To:</label>
+                    <input type="text" class="form-control" id="recipientSearch" placeholder="Search for a user...">
+                    <div id="searchResults" class="mt-2"></div>
+                </div>
+                <form id="messageForm" method="POST" action="{{ url_for('messages.send_message') }}" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="recipient_id" id="selectedRecipient">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Message:</label>
+                        <textarea class="form-control" name="content" rows="6" placeholder="Type your message..." required></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Attachments:</label>
+                        <input type="file" class="form-control" name="files" multiple>
+                        <div class="form-text">
+                            <small>You can attach images, PDFs, and documents (max 10MB each)</small>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="messageForm" class="btn btn-primary" disabled id="sendButton">
+                    <i class="fas fa-paper-plane me-1"></i>Send Message
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// User search functionality
+let searchTimeout;
+document.getElementById('recipientSearch').addEventListener('input', function() {
+    const query = this.value.trim();
+    clearTimeout(searchTimeout);
+    
+    if (query.length < 2) {
+        document.getElementById('searchResults').innerHTML = '';
+        return;
+    }
+    
+    searchTimeout = setTimeout(() => {
+        fetch(`/api/search?q=${encodeURIComponent(query)}&type=users`)
+            .then(response => response.json())
+            .then(data => {
+                const resultsDiv = document.getElementById('searchResults');
+                resultsDiv.innerHTML = '';
+                
+                if (data.users && data.users.length > 0) {
+                    data.users.forEach(user => {
+                        const userDiv = document.createElement('div');
+                        userDiv.className = 'user-result p-2 border rounded mb-2 cursor-pointer';
+                        userDiv.innerHTML = `
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <strong>${user.full_name}</strong>
+                                    <small class="text-muted d-block">@${user.username} • ${user.role}</small>
+                                </div>
+                            </div>
+                        `;
+                        userDiv.addEventListener('click', () => selectUser(user));
+                        resultsDiv.appendChild(userDiv);
+                    });
+                } else {
+                    resultsDiv.innerHTML = '<div class="text-muted">No users found</div>';
+                }
+            });
+    }, 300);
+});
+
+function selectUser(user) {
+    document.getElementById('selectedRecipient').value = user.id;
+    document.getElementById('recipientSearch').value = user.full_name;
+    document.getElementById('searchResults').innerHTML = '';
+    document.getElementById('sendButton').disabled = false;
+}
+
+// Auto-refresh message count
+setInterval(() => {
+    fetch('/messages/unread-count')
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.getElementById('unread-messages');
+            if (data.count > 0) {
+                badge.textContent = data.count;
+                badge.style.display = 'inline';
+            } else {
+                badge.style.display = 'none';
+            }
+        });
+}, 30000); // Check every 30 seconds
+</script>
+
+<style>
+.hover-bg-light:hover {
+    background-color: var(--bs-light) !important;
+}
+
+.user-result:hover {
+    background-color: var(--bs-light);
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+</style>
+{% endblock %}

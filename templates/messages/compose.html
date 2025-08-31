@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Compose Message - MedPeer{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-envelope me-2"></i>New Message
+                        </h5>
+                        <a href="{{ url_for('messages.inbox') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Inbox
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if recipient %}
+                        <!-- Recipient Info -->
+                        <div class="alert alert-info">
+                            <div class="d-flex align-items-center">
+                                {% if recipient.profile_picture %}
+                                    <img src="{{ recipient.profile_picture }}" alt="{{ recipient.get_full_name() }}" 
+                                         class="rounded-circle me-3" width="40" height="40">
+                                {% else %}
+                                    <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user text-white"></i>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <strong>To: {{ recipient.get_full_name() }}</strong>
+                                    <div class="small text-muted">{{ recipient.role.value.title() }} • @{{ recipient.username }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        {% if not recipient %}
+                            <!-- Recipient Selection -->
+                            <div class="mb-3">
+                                <label class="form-label">To:</label>
+                                <input type="text" class="form-control" id="recipientSearch" placeholder="Search for a user...">
+                                <div id="searchResults" class="mt-2"></div>
+                                {{ form.recipient_id() }}
+                            </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            {{ form.content.label(class="form-label") }}
+                            {{ form.content(class="form-control", rows="8", placeholder="Type your message here...") }}
+                            {% if form.content.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.content.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            {{ form.files.label(class="form-label") }}
+                            {{ form.files(class="form-control") }}
+                            {% if form.files.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.files.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                <small>You can attach multiple files (max 5MB each)</small>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('messages.inbox') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Message Tips -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">
+                        <i class="fas fa-lightbulb text-warning me-2"></i>Message Tips
+                    </h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Be professional and respectful in all communications</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Keep patient information confidential and de-identified</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Use clear and concise language</small>
+                        </li>
+                        <li class="mb-0">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Proofread before sending</small>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// User search functionality (if recipient not pre-selected)
+{% if not recipient %}
+let searchTimeout;
+document.getElementById('recipientSearch').addEventListener('input', function() {
+    const query = this.value.trim();
+    clearTimeout(searchTimeout);
+    
+    if (query.length < 2) {
+        document.getElementById('searchResults').innerHTML = '';
+        return;
+    }
+    
+    searchTimeout = setTimeout(() => {
+        fetch(`/api/search?q=${encodeURIComponent(query)}&type=users`)
+            .then(response => response.json())
+            .then(data => {
+                const resultsDiv = document.getElementById('searchResults');
+                resultsDiv.innerHTML = '';
+                
+                if (data.users && data.users.length > 0) {
+                    data.users.forEach(user => {
+                        const userDiv = document.createElement('div');
+                        userDiv.className = 'user-result p-3 border rounded mb-2 cursor-pointer';
+                        userDiv.innerHTML = `
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <strong>${user.full_name}</strong>
+                                    <small class="text-muted d-block">@${user.username} • ${user.role}</small>
+                                    ${user.institution ? `<small class="text-muted">${user.institution}</small>` : ''}
+                                </div>
+                            </div>
+                        `;
+                        userDiv.addEventListener('click', () => selectUser(user));
+                        resultsDiv.appendChild(userDiv);
+                    });
+                } else {
+                    resultsDiv.innerHTML = '<div class="text-muted p-2">No users found</div>';
+                }
+            });
+    }, 300);
+});
+
+function selectUser(user) {
+    document.getElementById('recipient_id').value = user.id;
+    document.getElementById('recipientSearch').value = user.full_name;
+    document.getElementById('searchResults').innerHTML = '';
+    
+    // Show selected user
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-info mt-2';
+    alertDiv.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong>To: ${user.full_name}</strong>
+                <div class="small text-muted">${user.role} • @${user.username}</div>
+            </div>
+            <button type="button" class="btn-close" onclick="clearRecipient()"></button>
+        </div>
+    `;
+    
+    const existingAlert = document.querySelector('.alert.alert-info');
+    if (existingAlert) {
+        existingAlert.remove();
+    }
+    
+    document.getElementById('recipientSearch').parentNode.appendChild(alertDiv);
+    document.getElementById('recipientSearch').style.display = 'none';
+}
+
+function clearRecipient() {
+    document.getElementById('recipient_id').value = '';
+    document.getElementById('recipientSearch').value = '';
+    document.getElementById('recipientSearch').style.display = 'block';
+    document.querySelector('.alert.alert-info').remove();
+}
+{% endif %}
+
+// Auto-resize textarea
+document.getElementById('content').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+});
+</script>
+
+<style>
+.user-result:hover {
+    background-color: var(--bs-light);
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+</style>
+{% endblock %}

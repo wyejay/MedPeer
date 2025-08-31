@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Search Messages - MedPeer{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold">
+                    <i class="fas fa-search me-2"></i>Search Messages
+                </h2>
+                <a href="{{ url_for('messages.inbox') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Inbox
+                </a>
+            </div>
+
+            <!-- Search Form -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET">
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="q" value="{{ query }}" 
+                                   placeholder="Search your messages..." autofocus>
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-search me-1"></i>Search
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Search Results -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        {% if query %}
+                            Search Results for "{{ query }}"
+                            {% if messages.items %}
+                                ({{ messages.total }} message{{ 's' if messages.total != 1 else '' }} found)
+                            {% endif %}
+                        {% else %}
+                            Enter a search term above
+                        {% endif %}
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if query %}
+                        {% if messages.items %}
+                            {% for message in messages.items %}
+                            {% set other_user = message.sender if message.sender != current_user else message.recipient %}
+                            <div class="border-bottom">
+                                <a href="{{ url_for('messages.conversation', user_id=other_user.id) }}" 
+                                   class="text-decoration-none text-dark">
+                                    <div class="p-4 hover-bg-light">
+                                        <div class="d-flex align-items-start">
+                                            <div class="flex-shrink-0 me-3">
+                                                {% if other_user.profile_picture %}
+                                                    <img src="{{ other_user.profile_picture }}" alt="{{ other_user.get_full_name() }}" 
+                                                         class="rounded-circle" width="40" height="40">
+                                                {% else %}
+                                                    <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" 
+                                                         style="width: 40px; height: 40px;">
+                                                        <i class="fas fa-user text-white"></i>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <div>
+                                                        <h6 class="mb-1">
+                                                            {% if message.sender == current_user %}
+                                                                <span class="text-primary">You</span> → {{ message.recipient.get_full_name() }}
+                                                            {% else %}
+                                                                {{ message.sender.get_full_name() }}
+                                                            {% endif %}
+                                                        </h6>
+                                                        <small class="text-muted">{{ time_ago(message.created_at) }}</small>
+                                                    </div>
+                                                </div>
+                                                <div class="message-content">
+                                                    {% set highlighted_content = message.content | replace(query, '<mark>' + query + '</mark>') %}
+                                                    {{ highlighted_content[:150] | safe }}
+                                                    {% if message.content|length > 150 %}...{% endif %}
+                                                </div>
+                                                {% if message.files.count() > 0 %}
+                                                    <div class="mt-2">
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-paperclip me-1"></i>
+                                                            {{ message.files.count() }} attachment{{ 's' if message.files.count() != 1 else '' }}
+                                                        </small>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="p-5 text-center">
+                                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                                <h5>No messages found</h5>
+                                <p class="text-muted">Try different search terms or check your spelling</p>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="p-5 text-center">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h5>Search Your Messages</h5>
+                            <p class="text-muted">Enter keywords to find specific conversations or content</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Pagination -->
+                {% if messages and messages.pages > 1 %}
+                <div class="card-footer">
+                    <nav aria-label="Search results pagination">
+                        <ul class="pagination pagination-sm justify-content-center mb-0">
+                            {% if messages.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('messages.search_messages', q=query, page=messages.prev_num) }}">Previous</a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in messages.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != messages.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('messages.search_messages', q=query, page=page_num) }}">{{ page_num }}</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">…</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if messages.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('messages.search_messages', q=query, page=messages.next_num) }}">Next</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Search Tips -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">
+                        <i class="fas fa-lightbulb text-warning me-2"></i>Search Tips
+                    </h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Search for specific words or phrases in your messages</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Use quotes for exact phrase matching: "patient care"</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Search includes message content and file names</small>
+                        </li>
+                        <li class="mb-0">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Results show messages from both sent and received conversations</small>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.hover-bg-light:hover {
+    background-color: var(--bs-light) !important;
+}
+
+mark {
+    background-color: #fff3cd;
+    padding: 0.1em 0.2em;
+    border-radius: 0.2em;
+}
+
+.message-content {
+    line-height: 1.4;
+}
+</style>
+{% endblock %}
