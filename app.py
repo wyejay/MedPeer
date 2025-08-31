@@ -15,7 +15,13 @@ logging.basicConfig(level=logging.DEBUG)
 class Base(DeclarativeBase):
     pass
 
-from extensions import dbfrom extensions import login_managerfrom extensions import mailfrom extensions import csrffrom extensions import migratedef create_app(config_name='default'):
+db = SQLAlchemy(model_class=Base)
+login_manager = LoginManager()
+mail = Mail()
+csrf = CSRFProtect()
+migrate = Migrate()
+
+def create_app(config_name='default'):
     app = Flask(__name__)
     
     # Load configuration
@@ -23,7 +29,9 @@ from extensions import dbfrom extensions import login_managerfrom extensions imp
     app.config.from_object(config[config_name])
     
     # Set secret key from environment
-    app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
+    app.secret_key = os.environ.get(
+        "SESSION_SECRET", "dev-secret-key-change-in-production"
+    )
     
     # Proxy fix for deployment
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
@@ -61,6 +69,10 @@ from extensions import dbfrom extensions import login_managerfrom extensions imp
     app.register_blueprint(api_bp, url_prefix='/api')
     
     # Create database tables
+    with app.app_context():
+        import models  # Import models to register them
+        db.create_all()
+    
     # Error handlers
     @app.errorhandler(404)
     def not_found(error):
@@ -68,7 +80,6 @@ from extensions import dbfrom extensions import login_managerfrom extensions imp
     
     @app.errorhandler(500)
     def internal_error(error):
-        db.session.rollback()
         return render_template('errors/500.html'), 500
     
     return app
