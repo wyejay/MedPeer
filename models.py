@@ -1,8 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+from flask import current_app
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from extensions import db
 import enum
+import jwt
 
 class UserRole(enum.Enum):
     STUDENT = "student"
@@ -114,6 +116,44 @@ class User(UserMixin, db.Model):
             followers.c.follower_id == self.id)
         own_posts = Post.query.filter_by(user_id=self.id)
         return followed_posts.union(own_posts).order_by(Post.created_at.desc())
+    
+    # Added missing methods for Flask-Login and email functionality
+    def get_reset_token(self, expires_sec=1800):
+        """Generate a JWT token for password reset or email verification"""
+        try:
+            payload = {
+                'user_id': self.id,
+                'exp': datetime.utcnow() + timedelta(seconds=expires_sec)
+            }
+            return jwt.encode(payload, current_app.config['SECRET_KEY'], algorithm='HS256')
+        except Exception:
+            return None
+    
+    @staticmethod
+    def verify_reset_token(token):
+        """Verify JWT token and return user"""
+        try:
+            payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
+            user_id = payload['user_id']
+            return User.query.get(user_id)
+        except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+            return None
+    
+    def is_authenticated(self):
+        """Required by Flask-Login"""
+        return True
+    
+    def is_active(self):
+        """Required by Flask-Login"""
+        return self.is_active
+    
+    def is_anonymous(self):
+        """Required by Flask-Login"""
+        return False
+    
+    def get_id(self):
+        """Required by Flask-Login"""
+        return str(self.id)
     
     def __repr__(self):
         return f'<User {self.username}>'
