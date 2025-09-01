@@ -1,0 +1,16 @@
+Flask
+Flask-Login
+Flask-Mail
+Flask-Migrate
+Flask-SQLAlchemy
+Flask-WTF
+Jinja2
+Pillow
+PyJWT
+SQLAlchemy
+WTForms
+Werkzeug
+bleach
+gunicorn
+psycopg2-binary
+email-validator
